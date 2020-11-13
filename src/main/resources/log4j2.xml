@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Properties>
+        <Property name="log-path">logs</Property>
+        <property name="component" value="awscloudhsmjcesamples" />
+        <property name="productLine" value="mifare2go" />
+        <property name="category" value="tracelog" />
+    </Properties>
+
+    <Appenders>
+        <!--Console-Appender -->
+        <Console name="Console-Appender" target="SYSTEM_OUT">
+            <PatternLayout>
+                <pattern> %5p [%thread] | %d{yyyy-MM-dd HH:mm:ss.SSS} | %F | %L | %X{requestId} %X{corelationId} | %m%n</pattern>
+            </PatternLayout>
+        </Console>
+
+        <!-- Rolling File Appender -->
+        <RollingRandomAccessFile
+                name="Rolling-Random-Access-File-Appender"
+                fileName="${log-path}/awscloudhsmjcesamples.log"
+                filePattern="${log-path}/archive/awscloudhsmjcesamples-%d{MM-dd-yyyy}.log-%i.gz">
+            <PatternLayout>
+                <Pattern>
+                    category=${category} | requestId=%30X{requestId} | correlationId=%20X{correlationId} | component=${component} | hostname=%X{server} | time=%d | event=%10X{event} | productLine=${productLine} | requesterId=%10X{requesterId} | source=%30X{source} | Line=%X{line} | severity=%p | message=%m%n
+                </Pattern>
+            </PatternLayout>
+
+            <Policies>
+                <SizeBasedTriggeringPolicy size="15 MB" />
+                <TimeBasedTriggeringPolicy interval="1" modulate="true" />
+            </Policies>
+
+            <DefaultRolloverStrategy max="150" />
+        </RollingRandomAccessFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- Below Root tag is enabled if Asynchronous log writing to file-->
+        <AsyncLogger  name="com.amazonaws.cloudhsm" level="trace">
+            <AppenderRef ref="Rolling-Random-Access-File-Appender" />
+        </AsyncLogger>
+
+        <Root name="com.amazonaws.cloudhsm" level="trace"> <AppenderRef ref="Console-Appender" /> </Root>
+
+    </Loggers>
+
+</Configuration>
