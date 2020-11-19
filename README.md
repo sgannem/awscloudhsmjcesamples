@@ -66,7 +66,7 @@ All Java dependencies should be bundled in the fat jars. You will only need to s
 native library in `/opt/cloudhsm/lib`. Jars can be run using the following command line (as an example): 
 
 ```
-java -ea -Djava.library.path=/opt/cloudhsm/lib/ -jar nxpkeydiversification.jar --nxp-div --masterKeyHandle 3932766 --divInput 010490000000013500010000005E88715B --kekHandle 3932766 --user username --password password --partition hsm-xiasgciswmb
+java -ea -Djava.library.path=/opt/cloudhsm/lib/ -jar nxpkeydiversification.jar --nxp-div --masterKeyHandle 3932766 --divInput 010490000000013500010000005E88715B --kekHandle 3932766 --threadPoolSize 10 --totalRequestSize 10 --user username --password password --partition hsm-xiasgciswmb
 ```
 ## Output would look like as below.
 ```
@@ -111,10 +111,17 @@ TRACE [main] | 2020-11-12 17:44:00.116 | CaviumCipher.java | 621 |   | LogId 3
 TRACE [main] | 2020-11-12 17:44:00.116 | CaviumCipher.java | 105 |   | Enter LogId 3 inputOffset 0 inputLen 16
 TRACE [main] | 2020-11-12 17:44:00.116 | CaviumCipher.java | 140 |   | LogId 3 Mode Encrypt doFinal processing 16 bytes, buffer remaining 0
 Exiting encryptKey...
-#############################################################
-#Got diversifiedKey:3C1BA7D0B794199F38447331F1AE2940
-#Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
-#############################################################
+#Execution Id:9, Total time taken(ms):76 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
+#Execution Id:1, Total time taken(ms):68 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
+#Execution Id:2, Total time taken(ms):63 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
+#Execution Id:3, Total time taken(ms):69 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
+#Execution Id:4, Total time taken(ms):72 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
+#Execution Id:5, Total time taken(ms):50 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
+#Execution Id:6, Total time taken(ms):70 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
+#Execution Id:7, Total time taken(ms):69 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
+#Execution Id:8, Total time taken(ms):58 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
+#Execution Id:9, Total time taken(ms):76 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
+#Execution Id:10, Total time taken(ms):58 Got encryptedDivKey:9E226FB250C504021D80F5BC19B24E34
 #Now it is logging out ...
 #Logged out from hsm successful...
 ```

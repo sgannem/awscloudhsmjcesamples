@@ -37,6 +37,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -79,6 +86,8 @@ public class NxpKeyDiversification {
             "\t--masterKeyHandle <masterKeyId(AES128)>\n" +
             "\t--kekHandle <KEKId(AES128)>\n" +
             "\t--divInput <divInput>\n" +
+            "\t--threadPoolSize <threadPoolSize>\n" +
+            "\t--totalRequestSize <totalRequestSize>\n" +
             "\t--user <username>\n" +
             "\t--password <password>\n" +
             "\t--partition <partition>\n\n";
@@ -98,6 +107,8 @@ public class NxpKeyDiversification {
 
         long masterkeyHandle = 0;
         long kekHandle = 0;
+        int threadPoolSize=0;
+        int totalRequestSize=0;
         String divInput =null;
         modes mode = modes.INVALID;
         String user = null;
@@ -130,11 +141,17 @@ public class NxpKeyDiversification {
                 case "--partition":
                     partition = args[++i];
                     break;
+                case "--threadPoolSize":
+                    threadPoolSize = Integer.valueOf(args[++i]);
+                    break;
+                case "--totalRequestSize":
+                    totalRequestSize = Integer.valueOf(args[++i]);
+                    break;
             }
         }
 
-        if (modes.NXP_DIV == mode && null == divInput && 0 == masterkeyHandle && 0 == kekHandle ) {
-            System.out.println("Please specify one of divInput or masterKeyHandle or kekHandle");
+        if (modes.NXP_DIV == mode && null == divInput && 0 == masterkeyHandle && 0 == kekHandle && 0 == threadPoolSize && 0==totalRequestSize) {
+            System.out.println("Please specify one of divInput or masterKeyHandle or kekHandle or threadPoolSize or totalRequestSize");
             help();
             return;
         } else {
@@ -173,12 +190,28 @@ public class NxpKeyDiversification {
         displayKeyInfo(maserKey);
         SecretKey kek = (SecretKey)  getKey(masterkeyHandle);
         displayKeyInfo(kek);
-        byte[] diversifiedKey = doDiversification(maserKey, divInput);
-        byte[] encryptedDivKey = encryptKey(kek, diversifiedKey);
-        System.out.println("#############################################################");
-        System.out.println("#Got diversifiedKey:"+toHexString(diversifiedKey));
-        System.out.println("#Got encryptedDivKey:"+toHexString(encryptedDivKey));
-        System.out.println("#############################################################");
+        AtomicLong al = new AtomicLong(0L);
+        ExecutorService executorService = Executors.newFixedThreadPool(threadPoolSize);
+        Map<Long, Future<String>> mapOfFutures = new HashMap<>();
+        final String divInputFinal = divInput;
+        for(int i=0;i<totalRequestSize;i++) {
+            long executionId = al.incrementAndGet();
+            mapOfFutures.put(executionId,executorService.submit(new Callable<String>() {
+                @Override
+                public String call() throws Exception {
+                    return doDiversificationwithElapsedTime(divInputFinal, maserKey, kek, executionId);
+                }
+            }));
+        }
+        /** its blocking to get all the results **/
+        mapOfFutures.forEach((tempKey, tempValue) -> {
+            try {
+                System.out.println(tempValue.get());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        executorService.shutdown();
         System.out.println("#Now it is logging out ...");
         logout();
         System.out.println("#Logged out from hsm successful...");
@@ -188,6 +221,22 @@ public class NxpKeyDiversification {
 
 
          **/
+    }
+
+    private static String doDiversificationwithElapsedTime(String divInput, SecretKey maserKey, SecretKey kek,
+      long executionId) throws Exception {
+        long startTime = System.nanoTime();
+        byte[] diversifiedKey = doDiversification(maserKey, divInput);
+        byte[] encryptedDivKey = encryptKey(kek, diversifiedKey);
+//        System.out.println("#############################################################");
+//        System.out.println("#Got diversifiedKey:"+toHexString(diversifiedKey));
+//        System.out.println("#Got encryptedDivKey:"+toHexString(encryptedDivKey));
+//        System.out.println("#############################################################");
+        long elapsedTime = System.nanoTime() - startTime;
+        String finalResult = "#Execution Id:"+executionId+", Total time taken(ms):"+(elapsedTime/1000000L)+" Got " +
+          "encryptedDivKey:"+toHexString(encryptedDivKey);
+        System.out.println(finalResult);
+        return finalResult;
     }
 
     private static void help() {
